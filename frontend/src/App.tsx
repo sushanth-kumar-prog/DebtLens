@@ -276,9 +276,10 @@ function App() {
                 value={repoPath}
                 onChange={(e) => setRepoPath(e.target.value)}
               />
-              <span className="text-[10px] text-gray-500 mt-2 block font-medium">
-                * Note: Analyzing remote repositories or large codebases requires cloning and traversing history, which can take 1-2 minutes. Please wait while the progress bar runs.
-              </span>
+              <div className="text-xs text-amber-500 mt-3 p-3 bg-amber-950/10 border border-amber-900/30 rounded flex items-start gap-2.5 font-medium leading-relaxed">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500 mt-0.5" />
+                <span>Note: Analyzing remote repositories or large codebases requires cloning and traversing history, which can take 1-2 minutes. Please wait while the progress bar runs.</span>
+              </div>
             </div>
             <button
               onClick={handleAnalyze}
