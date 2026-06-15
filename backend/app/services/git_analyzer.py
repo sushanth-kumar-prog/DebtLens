@@ -39,8 +39,8 @@ class GitAnalyzer:
         file_stats = {}
         bug_keywords = re.compile(r'\b(fix|bug|issue|revert|error|crash|fail)\b', re.IGNORECASE)
 
-        # Iterate through all commits on the default branch
-        for commit in self.repo.iter_commits():
+        # Iterate through the last 100 commits to guarantee fast response times
+        for commit in self.repo.iter_commits(max_count=100):
             message = commit.message
             author = commit.author.name
             is_bug = bool(bug_keywords.search(message))

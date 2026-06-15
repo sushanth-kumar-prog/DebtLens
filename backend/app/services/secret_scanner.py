@@ -30,8 +30,8 @@ class SecretScanner:
         except Exception:
             return leaks
 
-        # Scan commits in reverse chronological order
-        for commit in repo.iter_commits():
+        # Scan the last 100 commits in reverse chronological order to ensure instant scanning
+        for commit in repo.iter_commits(max_count=100):
             parent = commit.parents[0] if commit.parents else None
             
             if parent:
