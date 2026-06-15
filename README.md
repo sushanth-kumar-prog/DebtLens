@@ -80,7 +80,7 @@ DebtLens solves this by correlating code quality metrics with developer behavior
    ```bash
    npm run dev
    ```
-4. Open your browser and go to `http://localhost:5173/`. Paste your local project directory path into the scan field to run diagnostics.
+4. Open your browser and go to `http://localhost:5173/`. Paste your local project directory path or Git Repo into the scan field to run diagnostics.
 
 ---
 
@@ -110,12 +110,15 @@ The backend is a FastAPI Python application.
 
 ## 👥 Team Details
 
-* **Member 1 Name** - Role / Contribution
-* **GitHub Link**: [Your Profile](https://github.com)
+* **Sushanth Kumar R**
+* **Vigneshwaran R**
+* **Venkateswaran A**
+* **Phaneeth Kumar**
+
 
 ---
 
 ## 🎥 Demo Links
 
-* **Live Platform Link**: [Deploy URL Placeholder](https://vercel.app)
-* **Demo Video Link**: [YouTube/Loom URL Placeholder](https://youtube.com)
+* **Live Platform Link**: ((https://debt-lens-delta.vercel.app/))
+
