@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: debtlens-backend
+    env: docker
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false # Set this inside Render's dashboard manually

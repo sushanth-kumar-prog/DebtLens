@@ -69,6 +69,7 @@ interface AnalysisResult {
 }
 
 function App() {
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
   const [repoPath, setRepoPath] = useState('d:/sush/Debtlens');
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'quadrant' | 'dependencies' | 'security' | 'roi' | 'chat'>('dashboard');
@@ -108,7 +109,7 @@ function App() {
       await new Promise(r => setTimeout(r, 600));
       appendLog("Analyzing commit authorship and modification churn rates...");
       
-      const response = await fetch('http://localhost:8000/api/analyze', {
+      const response = await fetch(`${BACKEND_URL}/api/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -161,7 +162,7 @@ function App() {
     setChatLoading(true);
     setChatAnswer('');
     try {
-      const response = await fetch('http://localhost:8000/api/chat', {
+      const response = await fetch(`${BACKEND_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
