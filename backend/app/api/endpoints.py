@@ -185,44 +185,14 @@ async def chat_with_codebase(request: ChatRequest):
 
     ai_engine = AIPrioritizationEngine()
     
-    # We call Claude (or fallback mock answers)
-    if not ai_engine.api_key:
-        # High fidelity contextual fallback for demo
-        answer = f"I've reviewed the codebase data. Regarding your question about '{question}':\n\n"
-        if "test" in question.lower():
-            answer += "You should prioritize adding tests to files with high churn and bug frequency. Specifically, focusing tests on **" + (hotspots[0]['filepath'] if hotspots else 'the main files') + "** will yield the highest return on investment since it is modified frequently and currently accounts for bugs."
-        elif "fix" in question.lower() or "first" in question.lower():
-            answer += "Your immediate action plan should focus on **" + (hotspots[0]['filepath'] if hotspots else 'the complex hotspots') + "**. It has the highest priority score because it combines deep branching logic with high commit churn, meaning developers touch it often and it breaks."
-        else:
-            answer += "Looking at your project size of " + str(summary.get('total_loc', 0)) + " lines across " + str(summary.get('total_files', 0)) + " files, you have an average cyclomatic complexity of " + str(summary.get('avg_complexity', 0)) + ". The best next step is to run modularity cleanups on your highest complexity hotspots before they grow larger."
-        return {"answer": answer}
+    # Contextual fallback answers for demo if API calls fail or offline
+    fallback_answer = f"I've reviewed the codebase data. Regarding your question about '{question}':\n\n"
+    if "test" in question.lower():
+        fallback_answer += "You should prioritize adding tests to files with high churn and bug frequency. Specifically, focusing tests on **" + (hotspots[0]['filepath'] if hotspots else 'the main files') + "** will yield the highest return on investment since it is modified frequently and currently accounts for bugs."
+    elif "fix" in question.lower() or "first" in question.lower():
+        fallback_answer += "Your immediate action plan should focus on **" + (hotspots[0]['filepath'] if hotspots else 'the complex hotspots') + "**. It has the highest priority score because it combines deep branching logic with high commit churn, meaning developers touch it often and it breaks."
+    else:
+        fallback_answer += "Looking at your project size of " + str(summary.get('total_loc', 0)) + " lines across " + str(summary.get('total_files', 0)) + " files, you have an average cyclomatic complexity of " + str(summary.get('avg_complexity', 0)) + ". The best next step is to run modularity cleanups on your highest complexity hotspots before they grow larger."
 
-    headers = {
-        "x-api-key": ai_engine.api_key,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json"
-    }
-    
-    data = {
-        "model": "claude-3-haiku-20240307",
-        "max_tokens": 500,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ]
-    }
-
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.anthropic.com/v1/messages",
-                headers=headers,
-                json=data,
-                timeout=20.0
-            )
-            if response.status_code == 200:
-                resp_json = response.json()
-                return {"answer": resp_json["content"][0]["text"]}
-            else:
-                return {"answer": "Error calling AI provider. Fallen back: Your top priority is " + (hotspots[0]['filepath'] if hotspots else 'your main hotspot')}
-    except Exception as e:
-        return {"answer": f"Failed to reach AI assistant: {str(e)}"}
+    answer = await ai_engine.ask_llm(prompt, fallback_answer, max_tokens=500)
+    return {"answer": answer}

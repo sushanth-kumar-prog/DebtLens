@@ -9,9 +9,10 @@ from typing import Dict, Any, List
 class AIPrioritizationEngine:
     def __init__(self):
         self.api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        self.gemini_key = os.getenv("GEMINI_API_KEY", "")
 
     async def generate_refactoring_tips(self, file_metric: Dict[str, Any]) -> str:
-        """Call Claude API to get precise code rewrite/refactoring tips."""
+        """Call LLM API to get precise code rewrite/refactoring tips."""
         filepath = file_metric.get("filepath", "")
         complexity = file_metric.get("max_complexity", 1)
         churn = file_metric.get("churn", 1)
@@ -28,39 +29,56 @@ class AIPrioritizationEngine:
         Format it in clear Markdown. Focus on how to structure the code to reduce churn and bugs.
         """
 
-        if not self.api_key:
-            # High-fidelity mock fallback to ensure robust offline/hackathon execution
-            return self._generate_mock_tips(filepath, complexity, churn)
+        mock_fallback = self._generate_mock_tips(filepath, complexity, churn)
+        return await self.ask_llm(prompt, mock_fallback, max_tokens=300)
 
-        headers = {
-            "x-api-key": self.api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json"
-        }
-        
-        data = {
-            "model": "claude-3-haiku-20240307",
-            "max_tokens": 300,
-            "messages": [
-                {"role": "user", "content": prompt}
-            ]
-        }
+    async def ask_llm(self, prompt: str, fallback_text: str, max_tokens: int = 500) -> str:
+        """Helper to invoke Gemini, Claude, or fallback to mock response dynamically."""
+        # 1. Try Gemini Free API first
+        if self.gemini_key:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_key}"
+                payload = {
+                    "contents": [{
+                        "parts": [{"text": prompt}]
+                    }]
+                }
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(url, json=payload, timeout=20.0)
+                    if response.status_code == 200:
+                        resp_json = response.json()
+                        return resp_json["candidates"][0]["content"]["parts"][0]["text"]
+            except Exception:
+                pass
 
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    "https://api.anthropic.com/v1/messages",
-                    headers=headers,
-                    json=data,
-                    timeout=15.0
-                )
-                if response.status_code == 200:
-                    resp_json = response.json()
-                    return resp_json["content"][0]["text"]
-                else:
-                    return self._generate_mock_tips(filepath, complexity, churn)
-        except Exception:
-            return self._generate_mock_tips(filepath, complexity, churn)
+        # 2. Try Claude API
+        if self.api_key:
+            headers = {
+                "x-api-key": self.api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json"
+            }
+            data = {
+                "model": "claude-3-haiku-20240307",
+                "max_tokens": max_tokens,
+                "messages": [{"role": "user", "content": prompt}]
+            }
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        "https://api.anthropic.com/v1/messages",
+                        headers=headers,
+                        json=data,
+                        timeout=20.0
+                    )
+                    if response.status_code == 200:
+                        resp_json = response.json()
+                        return resp_json["content"][0]["text"]
+            except Exception:
+                pass
+
+        # 3. Fallback to mock / text
+        return fallback_text
 
     def _generate_mock_tips(self, filepath: str, complexity: int, churn: int) -> str:
         """Fallback method producing highly contextual refactoring tips."""
