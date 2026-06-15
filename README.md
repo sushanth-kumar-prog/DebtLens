@@ -9,7 +9,7 @@ Instead of overwhelming developers with thousands of minor formatting or style a
 
 ---
 
-## 📌 Problem Statement
+##  Problem Statement
 
 Software projects accumulate technical debt in silence: overly complex code loops, high-churn files modified by multiple developers, and legacy credentials exposed in Git history. 
 
@@ -19,7 +19,7 @@ DebtLens solves this by correlating code quality metrics with developer behavior
 
 ---
 
-## ✨ Features
+##  Features
 
 * **Refactoring Priorities Dashboard**: Ranks code files by a weighted technical debt severity score, generating human-readable refactoring checklists using Claude AI.
 * **Complexity × Churn Quadrant Map**: An interactive 2D scatter plot mapping files. Files in the top-right quadrant have high complexity and experience frequent modifications—highlighting them as critical refactor targets.
@@ -30,7 +30,7 @@ DebtLens solves this by correlating code quality metrics with developer behavior
 
 ---
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 * **Frontend**: React, TypeScript, Tailwind CSS v4, Lucide Icons
 * **Backend**: FastAPI (Python), Uvicorn
@@ -42,7 +42,7 @@ DebtLens solves this by correlating code quality metrics with developer behavior
 
 ---
 
-## ⚙️ Local Setup Instructions
+##  Local Setup Instructions
 
 ### Prerequisites
 * Python 3.9+
@@ -84,7 +84,7 @@ DebtLens solves this by correlating code quality metrics with developer behavior
 
 ---
 
-## 🚀 Deployment Instructions
+##  Deployment Instructions
 
 ### Frontend (Vercel)
 The frontend is a static Vite app that compiles into static HTML/JS/CSS assets.
