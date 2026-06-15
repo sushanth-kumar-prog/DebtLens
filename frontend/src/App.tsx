@@ -68,7 +68,7 @@ interface AnalysisResult {
 
 function App() {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-  const [repoPath, setRepoPath] = useState('d:/sush/Debtlens');
+  const [repoPath, setRepoPath] = useState('https://github.com/sushanth-kumar-prog/Times-series-analysis.git');
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'quadrant' | 'dependencies' | 'security' | 'roi' | 'chat'>('dashboard');
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -248,11 +248,6 @@ function App() {
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-[#3b82f6]"></span>
-            <span className="text-xs text-gray-500 font-mono">Engine Status: Connected</span>
-          </div>
         </div>
       </header>
 
@@ -281,6 +276,9 @@ function App() {
                 value={repoPath}
                 onChange={(e) => setRepoPath(e.target.value)}
               />
+              <span className="text-[10px] text-gray-500 mt-2 block font-medium">
+                * Note: Analyzing remote repositories or large codebases requires cloning and traversing history, which can take 1-2 minutes. Please wait while the progress bar runs.
+              </span>
             </div>
             <button
               onClick={handleAnalyze}
@@ -312,7 +310,7 @@ function App() {
         {result ? (
           <>
             {/* Plain English AI Summary Box */}
-            <section className="bg-[#18181b] border-l-4 border-[#3b82f6] p-6 rounded-r">
+            <section className="bg-[#18181b] border-l-4 border-[#3b82f6] p-6 rounded-r border-t border-r border-b border-t-gray-800 border-r-gray-800 border-b-gray-800 animate-[pulse_4s_infinite] shadow-md shadow-[#3b82f6]/5">
               <h3 className="text-sm font-bold uppercase tracking-wider text-gray-300 mb-2">Codebase Health Summary</h3>
               <p className="text-sm text-gray-300 leading-relaxed">
                 {getPlainEnglishSummary()}
