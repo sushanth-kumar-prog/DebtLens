@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Activity, 
-  ShieldAlert, 
   Clock, 
-  Search, 
   AlertTriangle, 
   ChevronDown, 
   ChevronUp, 
