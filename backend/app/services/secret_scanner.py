@@ -36,38 +36,59 @@ class SecretScanner:
             
             if parent:
                 diffs = parent.diff(commit, create_patch=True)
-            else:
-                diffs = commit.diff(None, create_patch=True)
-
-            for diff in diffs:
-                patch_str = diff.diff.decode('utf-8', errors='ignore')
-                lines = patch_str.splitlines()
-                
-                filepath = diff.b_path or diff.a_path
-                if not filepath:
-                    continue
-
-                for line_num, line in enumerate(lines):
-                    # Only look at lines added/changed in the commit
-                    if not line.startswith('+') or line.startswith('+++'):
+                for diff in diffs:
+                    patch_str = diff.diff.decode('utf-8', errors='ignore')
+                    lines = patch_str.splitlines()
+                    filepath = diff.b_path or diff.a_path
+                    if not filepath:
                         continue
-                    
-                    cleaned_line = line[1:].strip() # Strip the leading '+'
-                    
-                    for name, pattern in self.rules.items():
-                        match = pattern.search(cleaned_line)
-                        if match:
-                            # Context check for AWS Secret Key to prevent high false positives
-                            if name == "AWS Secret Key" and not re.search(r'(aws|secret|key|access)', cleaned_line, re.IGNORECASE):
-                                continue
+                    if any(x in filepath for x in ('node_modules/', 'venv/', '.git/', 'dist/', 'build/')):
+                        continue
 
-                            leaks.append({
-                                "secret_type": name,
-                                "filepath": filepath,
-                                "commit_sha": commit.hexsha[:8],
-                                "author": commit.author.name,
-                                "snippet": cleaned_line[:60] + "...",
-                                "date": commit.committed_datetime.isoformat()
-                            })
+                    for line_num, line in enumerate(lines):
+                        if not line.startswith('+') or line.startswith('+++'):
+                            continue
+                        
+                        cleaned_line = line[1:].strip()
+                        for name, pattern in self.rules.items():
+                            match = pattern.search(cleaned_line)
+                            if match:
+                                if name == "AWS Secret Key" and not re.search(r'(aws|secret|key|access)', cleaned_line, re.IGNORECASE):
+                                    continue
+                                leaks.append({
+                                    "secret_type": name,
+                                    "filepath": filepath,
+                                    "commit_sha": commit.hexsha[:8],
+                                    "author": commit.author.name,
+                                    "snippet": cleaned_line[:60] + "...",
+                                    "date": commit.committed_datetime.isoformat()
+                                })
+            else:
+                # First commit: scan entire files in the tree directly
+                for entry in commit.tree.traverse():
+                    if entry.type == 'blob':
+                        filepath = entry.path
+                        if any(x in filepath for x in ('node_modules/', 'venv/', '.git/', 'dist/', 'build/')):
+                            continue
+                        
+                        try:
+                            content = entry.data_stream.read().decode('utf-8', errors='ignore')
+                            for line in content.splitlines():
+                                cleaned_line = line.strip()
+                                for name, pattern in self.rules.items():
+                                    match = pattern.search(cleaned_line)
+                                    if match:
+                                        if name == "AWS Secret Key" and not re.search(r'(aws|secret|key|access)', cleaned_line, re.IGNORECASE):
+                                            continue
+                                        leaks.append({
+                                            "secret_type": name,
+                                            "filepath": filepath,
+                                            "commit_sha": commit.hexsha[:8],
+                                            "author": commit.author.name,
+                                            "snippet": cleaned_line[:60] + "...",
+                                            "date": commit.committed_datetime.isoformat()
+                                        })
+                        except Exception:
+                            continue
         
         return leaks

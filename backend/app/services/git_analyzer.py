@@ -3,7 +3,7 @@ import re
 import tempfile
 import shutil
 from typing import Dict, Any, List
-from git import Repo
+from git import Repo, NULL_TREE
 
 # Simple non-technical analogy:
 # Imagine this service as a history detective. It looks through the library's logbook (Git history)
@@ -50,44 +50,59 @@ class GitAnalyzer:
             
             if parent:
                 diffs = parent.diff(commit)
+                for diff in diffs:
+                    filepath = diff.b_path or diff.a_path
+                    if not filepath:
+                        continue
+                    if any(x in filepath for x in ('node_modules/', 'venv/', '.git/', 'dist/', 'build/')):
+                        continue
+                    if not filepath.endswith(('.py', '.js', '.jsx', '.ts', '.tsx')):
+                        continue
+
+                    if filepath not in file_stats:
+                        file_stats[filepath] = {
+                            "churn": 0,
+                            "bug_commits": 0,
+                            "authors": {},
+                            "reverts": 0,
+                            "total_commits": 0
+                        }
+
+                    stats = file_stats[filepath]
+                    stats["churn"] += 1
+                    stats["total_commits"] += 1
+                    if is_bug:
+                        stats["bug_commits"] += 1
+                    if "revert" in message.lower():
+                        stats["reverts"] += 1
+                    stats["authors"][author] = stats["authors"].get(author, 0) + 1
             else:
-                # First commit - compare against empty tree to avoid diffing uncommitted working dir
-                diffs = commit.diff('4b825dc642cb6eb9a0ffbf10f40d3475076b914d')
+                # First commit: traverse the commit tree to find all tracked files
+                for entry in commit.tree.traverse():
+                    if entry.type == 'blob':
+                        filepath = entry.path
+                        if any(x in filepath for x in ('node_modules/', 'venv/', '.git/', 'dist/', 'build/')):
+                            continue
+                        if not filepath.endswith(('.py', '.js', '.jsx', '.ts', '.tsx')):
+                            continue
 
-            # Record metrics for each modified file
-            for diff in diffs:
-                # Get the relative file path
-                filepath = diff.b_path or diff.a_path
-                if not filepath:
-                    continue
+                        if filepath not in file_stats:
+                            file_stats[filepath] = {
+                                "churn": 0,
+                                "bug_commits": 0,
+                                "authors": {},
+                                "reverts": 0,
+                                "total_commits": 0
+                            }
 
-                # We only focus on Python and JavaScript/TypeScript files for MVP
-                if any(x in filepath for x in ('node_modules/', 'venv/', '.git/', 'dist/', 'build/')):
-                    continue
-                if not filepath.endswith(('.py', '.js', '.jsx', '.ts', '.tsx')):
-                    continue
-
-                # Initialize stats for file if not exists
-                if filepath not in file_stats:
-                    file_stats[filepath] = {
-                        "churn": 0,
-                        "bug_commits": 0,
-                        "authors": {},
-                        "reverts": 0,
-                        "total_commits": 0
-                    }
-
-                stats = file_stats[filepath]
-                stats["churn"] += 1
-                stats["total_commits"] += 1
-                
-                if is_bug:
-                    stats["bug_commits"] += 1
-                
-                if "revert" in message.lower():
-                    stats["reverts"] += 1
-
-                stats["authors"][author] = stats["authors"].get(author, 0) + 1
+                        stats = file_stats[filepath]
+                        stats["churn"] += 1
+                        stats["total_commits"] += 1
+                        if is_bug:
+                            stats["bug_commits"] += 1
+                        if "revert" in message.lower():
+                            stats["reverts"] += 1
+                        stats["authors"][author] = stats["authors"].get(author, 0) + 1
 
         # Calculate final aggregated metrics (Bus Factor, Knowledge Concentration)
         processed_stats = {}
